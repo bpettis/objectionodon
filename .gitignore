@@ -1,0 +1,11 @@
+assets/
+assets-bak/
+assets-other/
+examples/
+.venv/
+
+objection_engine/
+
+.DS_Store
+
+output-*.mp4
