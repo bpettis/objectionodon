@@ -9,3 +9,5 @@ objection_engine/
 .DS_Store
 
 output-*.mp4
+
+.env
