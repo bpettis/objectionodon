@@ -1,4 +1,4 @@
-# Ace Attorney Mastodon Bot
+# Objectionodon - Ace Attorney Mastodon Bot
 
 One of my favorite things about the old bird website was the number of shitposting bots that were all over the place. The Fediverse needs more of those. (im-doing-my-part.gif)
 
