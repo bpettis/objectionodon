@@ -45,7 +45,7 @@ def main():
             with open(BLACKLIST_FILE, "a") as f:
                 f.write(username + "\n")
             print(f'Added {username} to blacklist')
-            # m.notifications_dismiss(notification['id'])
+            m.notifications_dismiss(notification['id'])
 
     
 
