@@ -95,10 +95,10 @@ def processThread(starting_id):
 
     
     # Post the video as a reply to the original request
-    # if postVideo(output, starting_id, ACCOUNT_INFO):
-    #     print("Video was posted!")
+    if postVideo(output, starting_id, ACCOUNT_INFO):
+        print("Video was posted!")
         
-    #     # Mark the thread as processed
+        # Mark the thread as processed
 
     # Cleanup the images that may have been created while parsing the posts
     for comment in comments:
@@ -106,7 +106,7 @@ def processThread(starting_id):
             os.remove(comment.evidence_path)
             
     # Delete the video as well:
-    # os.remove(output)
+    os.remove(output)
     
 def getPosts(start_id):
     try:
