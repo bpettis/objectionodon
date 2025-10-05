@@ -75,6 +75,16 @@ def processThread(starting_id):
     
     # Remove any posts from the blacklist
     blacklist = [line.rstrip('\n') for line in open(BLACKLIST_FILE, "r").readlines()]
+    # Most blacklist entries will be in the form of username@server
+    # This works fine because any foreign accounts in post['account']['acct'] will be in the form of username@server
+    # But if there is a username on the same server as the bot, then post['account']['acct'] will be in the form of username
+    # So we need to check if post['account']['acct'] is local to our server (e.g. if it has an @ in it) and if so, append the servername before comparaing against the blacklist
+    if '@' in post['account']['acct']:
+        blacklist = [f"{post['account']['acct']}" for line in open(BLACKLIST_FILE, "r").readlines()]
+        post['account']['acct'] = post['account']['acct'] + re.sub(r'http[s]?://', '', INSTANCE_URL)
+
+    
+    
     for post in posts:
         print(post['account']['acct'])
         if post['account']['acct'] in blacklist:
