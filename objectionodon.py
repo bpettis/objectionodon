@@ -22,6 +22,13 @@ ACCOUNT_INFO = {
     'token': os.getenv('AUTHORIZATION_TOKEN')
 }
 BLACKLIST_FILE = os.getenv('BLACKLIST_FILE') if os.getenv('BLACKLIST_FILE') else 'blacklist.txt'
+
+DEBUG_MODE = os.getenv('DEBUG_MODE') if os.getenv('DEBUG_MODE') else False
+if DEBUG_MODE == 'True' or DEBUG_MODE == 'true' or DEBUG_MODE == '1':
+    DEBUG_MODE = True
+else:
+    DEBUG_MODE = False
+
 additional_message = '''
 Don't want to see these posts? You can add @objectionodon@benpettis.ninja to your ignore list. DM @objectionodon@benpettis.ninja if you'd like your posts to be excluded from any animations.
 '''
@@ -31,25 +38,22 @@ m = Mastodon(access_token=ACCOUNT_INFO['token'], api_base_url=INSTANCE_URL)
 def main():
     print("Raising Objections...")
 
-
     # Get unread notifications and find any mentions
-    
-    # For each notification, get and process the thread
-    
-
-    # ** Some Threads for Testing - most do not contain a separate "summoning" post ** 
-    # 115300524825583508 # just a single reply to one post
-    # 109526457550799007 # longer thread, but only one person
-    # 115306828741823840 # longer thread, and with a few different characters
-    # 115307936418829951 - small thing for testing 
-
-    starting_id = '115308156905626354'
-    starting_id = '115318394231110275'
-
-    processThread(starting_id)
-
-
-
+    notifications = m.notifications(limit=50, types=['mention'])
+    if len(notifications) == 0:
+        print("No mentions found!")
+        quit()
+        
+    for notification in notifications:
+        print(notification['status']['id'])
+        
+        starting_id = notification['status']['id']
+        if processThread(starting_id):
+            # Delete the notification because we've processed it
+            m.notifications_dismiss(notification['id'])
+        else:
+            # Something in the processing went wrong - so keep the notification present
+            print("Something went wrong!")
     print("Done")
     
 def processThread(starting_id):
@@ -59,9 +63,9 @@ def processThread(starting_id):
     print(f'Got {str(len(posts))} posts!')
     
     # If the bot has already responded in the thread, skip it
-    for post in posts:
-        if ACCOUNT_INFO['username'] in post['account']['username']:
-            return
+    # for post in posts:
+    #     if ACCOUNT_INFO['username'] in post['account']['username']:
+    #         return False
     
     # Find the post which matches the starting id and remove it from posts - we don't want to include the one which was just summoning the bot
     for post in posts:
@@ -71,34 +75,41 @@ def processThread(starting_id):
     
     # Remove any posts from the blacklist
     blacklist = [line.rstrip('\n') for line in open(BLACKLIST_FILE, "r").readlines()]
-    print(f"Blacklist: {blacklist}")
     for post in posts:
         print(post['account']['acct'])
         if post['account']['acct'] in blacklist:
-            print(f"Skipping post repl {post['account']['acct']}")
+            print(f"Skipping post/reply from: {post['account']['acct']}")
             posts.remove(post)
-            break
 
     if len(posts) == 0:
         print("No posts left! Skipping this thread")
-        return
+        return True
+
+    if DEBUG_MODE:
+        for post in posts:
+            print(post)
+            print("---")
 
     # Parse these into a list suitable for objection_engine
     comments = parsePosts(posts)
+   
 
     # Render them
     output = f"output-{int(time.time())}.mp4"
+    print("Rendering comments using objection_engine...")
     render_comment_list(comments, output_filename=output, resolution_scale=3)
     
     print(f"File saved to {output}")
     
 
-    
+    status = False
     # Post the video as a reply to the original request
-    if postVideo(output, starting_id, ACCOUNT_INFO):
-        print("Video was posted!")
-        
-        # Mark the thread as processed
+    if DEBUG_MODE:
+        print(f"Debug mode enabled - not actually posting the video")
+    else:
+        if postVideo(output, starting_id, ACCOUNT_INFO):
+            print("Video was posted!")
+            status = True
 
     # Cleanup the images that may have been created while parsing the posts
     for comment in comments:
@@ -106,7 +117,14 @@ def processThread(starting_id):
             os.remove(comment.evidence_path)
             
     # Delete the video as well:
-    os.remove(output)
+    if DEBUG_MODE:
+        print(f"Debug mode enabled - retaining video file {output}")
+    else:
+        os.remove(output)
+       
+    # status = True if video was posted successfully
+    # status = False is something went wrong
+    return status
     
 def getPosts(start_id):
     try:
@@ -129,32 +147,52 @@ def getPosts(start_id):
         return [] 
 
 def parsePosts(posts):
+    print("Parsing posts...")
     comments = []
     for post in posts:
-        if post['media_attachments']:
-            downloadImage(post['media_attachments'][0]['url'], post['id'])
-            
-            
+        print(post['id'])
+        has_image = False
+        if len(post['media_attachments']) > 0:
+            if post['media_attachments'][0]['type'] == 'image':
+                has_image = True
+                downloadImage(post['media_attachments'][0]['url'], post['id'])
+
+        
         # TO-DO: See if there's an easy-ish way to get a thumbnail for a URL in the post - and use that as the "evidence_path"
         comments.append(
             Comment(
                 user_name="@" + post['account']['acct'],
                 text_content=formatText(post['content']),
-                evidence_path="image-" + str(post['id']) + ".jpg" if post['media_attachments'] else None
+                evidence_path="image-" + str(post['id']) + ".jpg" if has_image else None
         ))
     return comments
 
 def formatText(text):
     text = stripHtml(text)
-    text = re.sub(r'@(\w+)', '', text) # Remove any @usernames
-    text = re.sub(r'(?:http:\/\/|www\.|https:\/\/)(?:www\.)*([^\/]+)(.*)\s?', '[Link from \\1]', text) # replace any URLs with a shorter version
+    text = re.sub(r'@(\s\w+|\w+)', '', text) # Remove any @usernames
+    text = re.sub(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])', '[Link from \\2]', text) # replace any URLs with a shorter version
     text.replace("\n", " ") # Replace newlines with spaces
+    
+    # But there's a possibility that the text is entirely blank! And that will cause the renderer to break. So let's check if the text is empty and fix it:
+    if len(text) == 0:
+        text = "..."
     return text
 
 def stripHtml(text):
     # Make the HTML to just plain text
     soup = BeautifulSoup(text, 'html.parser')
-    text = soup.get_text()
+    # Remove anything with class="invisible"
+    for tag in soup.find_all(class_="invisible"):
+        tag.decompose()
+        
+    # Find any <a> tags and replace them with their href attribute -- so we can process the URL later on
+    for tag in soup.find_all('a'):
+        # Check if it has the class "mention" and skip this next part if so - otherwise we'll end up with gross [Link to .... ] anytime there is an @mention
+        if tag.has_attr('class') and 'mention' in tag['class']:
+            continue
+        tag.replace_with(tag['href'])
+        
+    text = soup.get_text(separator=' ')
     return text
 
 def downloadImage(url, id):
@@ -195,7 +233,8 @@ def postVideo(output, start_id, account_info):
         print(e)
     
     # Sleep for a few seconds to make sure it's uploaded
-    time.sleep(5)
+    # TO-DO: Come up with a way to just check the status of the media and use that to decide when to continue
+    time.sleep(30)
     
     # Post the status
     # , in_reply_to_id=start_id
