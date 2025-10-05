@@ -21,6 +21,7 @@ ACCOUNT_INFO = {
     'password': os.getenv('PASSWORD'),
     'token': os.getenv('AUTHORIZATION_TOKEN')
 }
+BLACKLIST_FILE = os.getenv('BLACKLIST_FILE') if os.getenv('BLACKLIST_FILE') else 'blacklist.txt'
 additional_message = '''
 Don't want to see these posts? You can add @objectionodon@benpettis.ninja to your ignore list. DM @objectionodon@benpettis.ninja if you'd like your posts to be excluded from any animations.
 '''
@@ -43,7 +44,7 @@ def main():
     # 115307936418829951 - small thing for testing 
 
     starting_id = '115308156905626354'
-    starting_id = '115310830092201931'
+    starting_id = '115318394231110275'
 
     processThread(starting_id)
 
@@ -56,14 +57,31 @@ def processThread(starting_id):
     posts = getPosts(starting_id) # retrieve a list of all the Mastodon post objects in the thread
     
     print(f'Got {str(len(posts))} posts!')
+    
+    # If the bot has already responded in the thread, skip it
+    for post in posts:
+        if ACCOUNT_INFO['username'] in post['account']['username']:
+            return
+    
     # Find the post which matches the starting id and remove it from posts - we don't want to include the one which was just summoning the bot
     for post in posts:
         if post['id'] == starting_id:
             posts.remove(post)
             break
     
-    # TO-DO: Compare the list against a list of accounts that have requested to be ignored, and make sure we skip over those
-    
+    # Remove any posts from the blacklist
+    blacklist = [line.rstrip('\n') for line in open(BLACKLIST_FILE, "r").readlines()]
+    print(f"Blacklist: {blacklist}")
+    for post in posts:
+        print(post['account']['acct'])
+        if post['account']['acct'] in blacklist:
+            print(f"Skipping post repl {post['account']['acct']}")
+            posts.remove(post)
+            break
+
+    if len(posts) == 0:
+        print("No posts left! Skipping this thread")
+        return
 
     # Parse these into a list suitable for objection_engine
     comments = parsePosts(posts)
@@ -77,10 +95,10 @@ def processThread(starting_id):
 
     
     # Post the video as a reply to the original request
-    if postVideo(output, starting_id, ACCOUNT_INFO):
-        print("Video was posted!")
+    # if postVideo(output, starting_id, ACCOUNT_INFO):
+    #     print("Video was posted!")
         
-        # Mark the thread as processed
+    #     # Mark the thread as processed
 
     # Cleanup the images that may have been created while parsing the posts
     for comment in comments:
@@ -88,7 +106,7 @@ def processThread(starting_id):
             os.remove(comment.evidence_path)
             
     # Delete the video as well:
-    os.remove(output)
+    # os.remove(output)
     
 def getPosts(start_id):
     try:
