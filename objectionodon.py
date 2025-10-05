@@ -129,7 +129,7 @@ def parsePosts(posts):
 def formatText(text):
     text = stripHtml(text)
     text = re.sub(r'@(\w+)', '', text) # Remove any @usernames
-    text = re.sub(r'http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-f][0-9a-f]))+', '(Link from \1)', text) # replace any URLs with a shorter version
+    text = re.sub(r'(?:http:\/\/|www\.|https:\/\/)(?:www\.)*([^\/]+)(.*)\s?', '[Link from \\1]', text) # replace any URLs with a shorter version
     text.replace("\n", " ") # Replace newlines with spaces
     return text
 
