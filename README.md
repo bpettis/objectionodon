@@ -90,4 +90,11 @@ I think it's important to have some control over where the bot will run. People 
 The demo `blacklist.txt` file works as an example of how this file should be set up. I am including my own bot's account in the list as an example - but note that the script is already set up to skip any threads to which it has already responded.
 
 
+
+# Known Issues
+
+- Blacklisted accounts - if your mastodon server uses an alias for its domain name, then the blacklist will almost certainly not behave correctly. 
+    - For example, my server is at `mastodon.benpettis.ninja` but its alias for any account names is just `benpettis.ninja`. This means that my bot's account username appears to be `@objectionodon@benpettis.ninja`. But the way that the script checks the blacklist, it is going to compare the username to `@objectionodon@mastodon.benpettis.ninja` and not match as expected
+    - as a temporary workaround, if listing any local accounts on the blacklist, you must use the _full_ domain name
+
 ---
