@@ -76,8 +76,18 @@ Do those things before trying to install polyglot
 This will probably not work right away. 
 
 
-## To 
 
 # Usage
+
+## Environment Variables
+
+Create a `.env` file to store important secrets (or have them set in your run environment)
+
+## Blacklist
+
+I think it's important to have some control over where the bot will run. People may not want their posts included. You may also want to manually specify some accounts that just shouldn't be included for whatever reason. For example, I follow the Auschwitz Museum in the Fediverse - they regularly post important remembrances from history. I don't think that content would be appropriate for displaying in Ace Attorney format. So I skip it. 
+
+The demo `blacklist.txt` file works as an example of how this file should be set up. I am including my own bot's account in the list as an example - but note that the script is already set up to skip any threads to which it has already responded.
+
 
 ---
