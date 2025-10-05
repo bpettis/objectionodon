@@ -45,6 +45,10 @@ def main():
         quit()
         
     for notification in notifications:
+        if notification['status']['visibility'] != 'public':
+            print("Not a public post! Skipping...")
+            continue
+        
         print(notification['status']['id'])
         
         starting_id = notification['status']['id']
