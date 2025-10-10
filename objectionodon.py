@@ -173,8 +173,8 @@ def parsePosts(posts):
         has_image = False
         if len(post['media_attachments']) > 0:
             if post['media_attachments'][0]['type'] == 'image':
-                has_image = True
-                downloadImage(post['media_attachments'][0]['url'], post['id'])
+                if downloadImage(post['media_attachments'][0]['url'], post['id']):
+                    has_image = True
 
         
         # TO-DO: See if there's an easy-ish way to get a thumbnail for a URL in the post - and use that as the "evidence_path"
@@ -244,6 +244,21 @@ def authorize(ACCOUNT_INFO):
 
 def postVideo(output, start_id, account_info):
     print("Posting video...")
+    
+    
+    usernames = []
+    
+    for post in posts:
+        usernames.append('@' + post['account']['acct'])
+    # Join the usernames into a single string
+    # use set() to remove any duplicates -- avoids spamming names multiple times.
+    usernames = " ".join(set(usernames))
+    
+    
+    # TO-DO: Add a check to see if this message exceeds the character limit - and if so trim the usernames list
+    message = "OBJECTION! \n\nYour video is now ready. \n\n\n" + usernames + '\n\n\n' + additional_message
+    print(message)
+
         
     # Upload the video
     try:
