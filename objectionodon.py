@@ -45,9 +45,11 @@ def main():
         quit()
         
     for notification in notifications:
-        if notification['status']['visibility'] != 'public':
+        # check that the post is either 'public' or 'unlisted' so we can skip anything private:
+        if notification['status']['visibility'] == 'private' or notification['status']['visibility'] == 'direct':
             print("Not a public post! Skipping...")
             continue
+
         
         print(notification['status']['id'])
         
