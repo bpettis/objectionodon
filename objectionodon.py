@@ -126,7 +126,7 @@ def processThread(starting_id):
     if DEBUG_MODE:
         print(f"Debug mode enabled - not actually posting the video")
     else:
-        if postVideo(output, starting_id, ACCOUNT_INFO):
+        if postVideo(output, starting_id, posts):
             print("Video was posted!")
             status = True
 
@@ -216,9 +216,15 @@ def stripHtml(text):
 
 def downloadImage(url, id):
     r = requests.get(url)
+    
+    if r.status_code != 200:
+        print(f"Failed to download image {url}")
+        return False
+    
     name = f"image-{id}.jpg"
     with open(name, "wb") as f:
         f.write(r.content)
+    return True
 
 def authorize(ACCOUNT_INFO):
     # curl -X POST \
@@ -242,7 +248,7 @@ def authorize(ACCOUNT_INFO):
     print('Authorized successfully!')
     return
 
-def postVideo(output, start_id, account_info):
+def postVideo(output, start_id, posts):
     print("Posting video...")
     
     
@@ -259,7 +265,7 @@ def postVideo(output, start_id, account_info):
     message = "OBJECTION! \n\nYour video is now ready. \n\n\n" + usernames + '\n\n\n' + additional_message
     print(message)
 
-        
+    
     # Upload the video
     try:
         media = m.media_post(output, "video/mp4")
@@ -273,7 +279,7 @@ def postVideo(output, start_id, account_info):
     # Post the status
     # , in_reply_to_id=start_id
     try:
-        m.status_post("OBJECTION! \n\nYour video is now ready. \n\n\n" + additional_message, media_ids=[media['id']], in_reply_to_id=start_id)
+        m.status_post(message, media_ids=[media['id']], in_reply_to_id=start_id)
         return True
     except Exception as e:
         print(e)
