@@ -22,7 +22,7 @@ ACCOUNT_INFO = {
     'token': os.getenv('AUTHORIZATION_TOKEN')
 }
 BLACKLIST_FILE = os.getenv('BLACKLIST_FILE') if os.getenv('BLACKLIST_FILE') else 'blacklist.txt'
-
+BOT_USERNAME = 'objectionodon' # Set this so the bot doesn't respond to itself
 DEBUG_MODE = os.getenv('DEBUG_MODE') if os.getenv('DEBUG_MODE') else False
 if DEBUG_MODE == 'True' or DEBUG_MODE == 'true' or DEBUG_MODE == '1':
     DEBUG_MODE = True
@@ -86,6 +86,10 @@ def processThread(starting_id):
     
     for post in posts:
         print(post['account']['acct'])
+        
+        if post['account']['acct'] == BOT_USERNAME:
+            print('Objections already raised in this thread -- ending processing.')
+        
         # Most blacklist entries will be in the form of username@server
         # This works fine because any foreign accounts in post['account']['acct'] will be in the form of username@server
         # But if there is a username on the same server as the bot, then post['account']['acct'] will be in the form of username
@@ -99,6 +103,8 @@ def processThread(starting_id):
         if check_name in blacklist:
             print(f"Skipping post/reply from: {post['account']['acct']}")
             posts.remove(post)
+            
+        
 
     if len(posts) == 0:
         print("No posts left! Skipping this thread")
