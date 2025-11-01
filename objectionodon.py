@@ -69,9 +69,9 @@ def processThread(starting_id):
     print(f'Got {str(len(posts))} posts!')
     
     # If the bot has already responded in the thread, skip it
-    # for post in posts:
-    #     if ACCOUNT_INFO['username'] in post['account']['username']:
-    #         return False
+    for post in posts:
+        if ACCOUNT_INFO['username'] in post['account']['username']:
+            return False
     
     # Find the post which matches the starting id and remove it from posts - we don't want to include the one which was just summoning the bot
     for post in posts:
